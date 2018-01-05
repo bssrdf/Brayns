@@ -156,6 +156,12 @@ enum Engine: string {
     optix
 }
 
+enum AccumulationType: string {
+    none,
+    linear,
+    ai_denoised
+}
+
 table Settings {
     engine: Engine;
     volume_samples_per_ray: uint;
@@ -163,7 +169,7 @@ table Settings {
     samples_per_pixel: int;
     ambient_occlusion: float;
     ambient_occlusion_distance: float;
-    accumulation: bool;
+    accumulation_type: AccumulationType;
     shadows: float;
     soft_shadows: float;
     shading: Shading;

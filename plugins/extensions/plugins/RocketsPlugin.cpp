@@ -688,13 +688,13 @@ bool RocketsPlugin::_requestFrameBuffers()
 {
     auto& frameBuffer = _engine->getFrameBuffer();
     const Vector2i frameSize = frameBuffer.getSize();
-    const float* depthBuffer = frameBuffer.getDepthBuffer();
+    const float* floatBuffer = frameBuffer.getFloatBuffer();
 
     _remoteFrameBuffers.setWidth(frameSize.x());
     _remoteFrameBuffers.setHeight(frameSize.y());
-    if (depthBuffer)
+    if (floatBuffer)
         _remoteFrameBuffers.setDepth(
-            reinterpret_cast<const uint8_t*>(depthBuffer),
+            reinterpret_cast<const uint8_t*>(floatBuffer),
             frameSize.x() * frameSize.y() * sizeof(float));
     else
         _remoteFrameBuffers.setDepth(0, 0);
@@ -1128,7 +1128,23 @@ void RocketsPlugin::_initializeSettings()
         renderingParameters.getAmbientOcclusionStrength());
     _remoteSettings.setAmbientOcclusionDistance(
         renderingParameters.getAmbientOcclusionDistance());
-    _remoteSettings.setAccumulation(renderingParameters.getAccumulation());
+
+    switch (renderingParameters.getAccumulationType())
+    {
+    case AccumulationType::ai_denoised:
+        _remoteSettings.setAccumulationType(
+            ::brayns::v1::AccumulationType::ai_denoised);
+        break;
+    case AccumulationType::linear:
+        _remoteSettings.setAccumulationType(
+            ::brayns::v1::AccumulationType::linear);
+        break;
+    default:
+        _remoteSettings.setAccumulationType(
+            ::brayns::v1::AccumulationType::none);
+        break;
+    }
+
     _remoteSettings.setShadows(renderingParameters.getShadows());
     _remoteSettings.setSoftShadows(renderingParameters.getSoftShadows());
     _remoteSettings.setRadiance(
@@ -1200,8 +1216,20 @@ void RocketsPlugin::_settingsUpdated()
     _parametersManager.set("ambient-occlusion-distance",
                            std::to_string(
                                _remoteSettings.getAmbientOcclusionDistance()));
-    _parametersManager.set("accumulation",
-                           (_remoteSettings.getAccumulation() ? "1" : "0"));
+
+    switch (_remoteSettings.getAccumulationType())
+    {
+    case ::brayns::v1::AccumulationType::ai_denoised:
+        _parametersManager.set("accumulation", "ai-denoised");
+        break;
+    case ::brayns::v1::AccumulationType::linear:
+        _parametersManager.set("accumulation", "linear");
+        break;
+    default:
+        _parametersManager.set("accumulation", "none");
+        break;
+    }
+
     _parametersManager.set("shadows",
                            std::to_string(_remoteSettings.getShadows()));
     _parametersManager.set("soft-shadows",
